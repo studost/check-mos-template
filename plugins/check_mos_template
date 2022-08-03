@@ -1,0 +1,278 @@
+#!/usr/bin/perl
+#=======================================================================================
+# Copyright
+#=======================================================================================
+# check_mos_template
+#=======================================================================================
+# Return random check result
+#
+# TODO: help
+# Update help text
+#
+# ERRORS:
+#
+# CHANGELOG:
+# 2021_05_28 1.0.0 Initial version
+#
+# TODO: help
+# Update help text
+#
+#=======================================================================================
+# EXAMPLES
+#=======================================================================================
+# template --help
+#=======================================================================================
+# ENVIRONMENT
+#=======================================================================================
+#=======================================================================================
+# PRAGMAS
+#=======================================================================================
+use strict;
+use warnings;
+
+# LIBS
+use FindBin;
+use lib "$FindBin::Bin/perl/lib";
+
+# Load required Perl MODULES
+use Getopt::Long qw(:config no_ignore_case bundling);
+use Pod::Usage;
+use MOSUtils;
+# use Data::Dumper;
+# $Data::Dumper::Indent = 1;
+# $Data::Dumper::Terse = 1;
+# $Data::Dumper::Pair = ' => ';
+# use JSON;
+
+use constant {
+    STD   => 0,
+    INF   => 1,
+    DBG   => 2,
+    SPM   => 3,
+    BREAK => "\n",
+    BLANK => ' ',
+    OK    => 0,
+    WARNING    => 1,
+    CRITICAL   => 2,
+    UNKNOWN    => 3,
+};
+
+# Get the base name of this script for use in the examples
+use File::Basename;
+my $PROGNAME = basename($0);
+
+my ($sec, $min, $hour, $day, $month, $year, $wday, $yday, $isdst) = localtime;
+my $date = sprintf("%04d_%02d_%02d", $year + 1900, $month + 1, $day);
+my $time = sprintf("%02d_%02d_%02d", $hour,        $min,       $sec);
+
+#=======================================================================================
+# VARIABLES
+#=======================================================================================
+my $VERSIONNR = '1.0.0';
+my $BUILD     = '149';          
+my $YEAR      = '2021';
+
+#=======================================================================================
+# Define and document the valid command line options
+# usage, help, version, timeout and verbose are defined by default.
+# GETOPTIONS
+#=======================================================================================
+my $opt_help         = 0;
+my $opt_version      = 0;
+my $opt_verbose      = 0;
+my $opt_logfile;
+my $opt_timeout      = 30;
+my $opt_usage        = 0;
+# change this
+my $opt_test         = 50;
+# thresholds
+my $opt_warning         = 80;
+my $opt_critical        = 90;
+
+GetOptions(
+    'help|h'         => \$opt_help,
+    'verbose|v+'     => \$opt_verbose,
+    'logfile|l=s'    => \$opt_logfile,
+    'version|V'      => \$opt_version,
+    'timeout|t=i'    => \$opt_timeout,
+    'usage|?'        => \$opt_usage,
+# change this
+    'test|T=s'       => \$opt_test,
+) 
+or pod2usage("Try '$0 --help' for more information.");
+
+
+#=======================================================================================
+# Perform sanity checking on command line options
+#=======================================================================================
+pod2usage(-exitvalue => 3, -verbose => 2)
+    if $opt_help;
+pod2usage(-exitvalue => 3, -verbose => 99, -sections => "NAME", -output => \*STDOUT, -message => "$0:\nmonitos Plugin version $VERSIONNR $BUILD\n(C) $YEAR Freicon GmbH & Co. KG")
+    if $opt_version;
+pod2usage(-exitvalue => 3, -verbose => 99, -sections => "SYNOPSIS", -output => \*STDOUT)
+    if $opt_usage;
+#pod2usage(-exitvalue => 3, -verbose => 1, -output => \*STDOUT, -message => "$0: Missing argument monitos authtoken.\n")
+    #if ($opt_token eq 'NOTSETYET' && ($opt_mode ne 'attributes'));
+
+
+#=======================================================================================
+# PROLOG
+#=======================================================================================
+$MOSUtils::VERBOSE = $opt_verbose;
+$MOSUtils::LOGFILE = $opt_logfile;
+logger(DBG, 'DBG is active. Verbose is: '.$opt_verbose);
+logger(SPM, 'SPM is active. Verbose is: '.$opt_verbose);
+
+#global
+#use vars qw($rc $out $perf $long);
+my $rc = 3;
+my $out;
+my $long;
+my $perf;
+
+
+#=======================================================================================
+# Activate timeout.
+# THIS is where you'd do your actual checking to get a real value for $result
+# Don't forget to timeout after $p->opts->timeout seconds, if applicable.
+#=======================================================================================
+logger(DBG, 'Timeout is: '.$opt_timeout);
+$SIG{ALRM} = sub {
+    die ('Plugin '.$PROGNAME.' reached timeout of '.$opt_timeout.' seconds');
+};
+
+alarm($opt_timeout);
+
+
+#=======================================================================================
+# MAIN
+# THIS is where you'd do your actual checking to get a real value for $checkresult
+#=======================================================================================
+my $r = get_random_result();
+logger(INF, 'check_result is: '.$r);
+$rc   = mos_check_thresholds($r, $opt_warning, $opt_critical);
+$out  = 'Random result is '.$r;
+
+logger(DBG, 'out is: '.$out);
+logger(DBG, 'perf is: '.Dumper($perf));
+my $rc_str = get_status_str($rc);
+mos_nagios_exit($rc_str, $out, $perf);
+
+# more than one result!
+# my ($rcs, $msgs);
+# push(@{$rcs}, $rc);
+# push(@{$msgs}, $msg);
+#$rc_str   = mos_get_worst_state($rcs); # return codes as arrayref
+#mos_nagios_exit($rc_str, $out, $perf);
+#=======================================================================================
+# END OF MAIN
+#=======================================================================================
+# ALARM STOP
+alarm(0);
+
+# EXIT - we never should come here
+mos_exit('UNKNOWN', 'Plugin exits here - something went terribly wrong');
+
+
+#=======================================================================================
+# SUBPROCEDURES
+#=======================================================================================
+#=============================
+# SUB get_random_result
+# RETURN: random result
+# perldoc -f rand
+#=============================
+sub get_random_result {
+    # my ($arg) = @_;
+    return $r;
+}
+
+
+
+__END__
+
+#=======================================================================================
+# PERLDOC
+#=======================================================================================
+=head1 NAME
+
+check_mos_template - This script checks random results
+
+
+
+=head1 VERSION
+
+This document corresponds to version 1.0.0 of the script check_mos_template
+
+
+
+=head1 SYNOPSIS
+
+check_mos_template [-h|--help] [-?|--usage] [--version | -V] [--timeout | -t <SECONDS>] [-v][v][v]
+
+
+
+=head1 DESCRIPTION
+
+This Nagios compatible script checks against a random value and returns the corresponding result considering the given thresholds
+
+
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--help | -h>
+
+Show this help.
+
+=item B<--usage | -?>
+
+Show a short very version of this help.
+
+=item B<--verbose | -v>
+
+Increase the verbosity of this script. Option can be given up to three times (-vvv) for intensive debugging.
+
+=item B<--version | -V>
+
+Show the version of this script.
+
+=item B< --critical | -c >
+
+OPTION critical. Datatype is STRING. Default value is 90.
+
+
+=item B< --timeout | -t >
+
+OPTION timeout. Datatype is INTEGER. Default value is 30.
+
+
+=item B< --warning | -w >
+
+OPTION warning. Datatype is STRING. Default value is 80.
+
+Timeout for execution in seconds
+
+=back
+
+
+
+=head1 Examples
+
+check_mos_template -w 60 -c 70 -v
+
+
+=head1 AUTHOR
+
+studo
+
+
+
+=head1 LICENSE AND COPYRIGHT
+
+2021 studo
+
+=cut
+
+# vim: set tabstop=4 shiftwidth=4 softtabstop=4 expandtab:
